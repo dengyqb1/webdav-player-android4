@@ -1,13 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.3"
+    namespace 'com.webdav.player'
+    compileSdk 33
+    buildToolsVersion "33.0.0"
 
     defaultConfig {
         applicationId "com.webdav.player"
-        minSdkVersion 15
-        targetSdkVersion 15
+        minSdk 15
+        targetSdk 15
         versionCode 1
         versionName "1.0"
     }
@@ -24,12 +25,11 @@ android {
         targetCompatibility JavaVersion.VERSION_1_7
     }
 
-    lintOptions {
+    lint {
         abortOnError false
     }
 }
 
 dependencies {
-    // WebDAV client - older version for API 15 compatibility
     implementation 'com.github.lookfirst:sardine:5.7'
 }
