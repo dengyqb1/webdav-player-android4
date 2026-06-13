@@ -16,8 +16,6 @@ import android.widget.TextView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import com.github.sardine.DavResource;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -36,7 +34,7 @@ public class MainActivity extends ListActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate.onCreate(savedInstanceState);
+        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         config = new Config(this);
@@ -141,14 +139,13 @@ public class MainActivity extends ListActivity {
         protected List<FileItem> doInBackground(String... params) {
             try {
                 String path = params[0];
-                List<DavResource> resources = davClient.list(path);
+                List<DavClient.DavEntry> entries = davClient.list(path);
                 List<FileItem> items = new ArrayList<FileItem>();
-                for (DavResource r : resources) {
-                    String name = nameFromPath(r.getPath());
-                    if (name == null || name.isEmpty()) continue;
+                for (DavClient.DavEntry e : entries) {
+                    if (e.name == null || e.name.isEmpty()) continue;
                     // Skip the current directory itself
-                    if (r.getPath().equals(path) || r.getPath().equals(currentPath)) continue;
-                    items.add(new FileItem(name, r.getPath(), r.isDirectory(), r.getContentLength()));
+                    if (e.path.equals(path) || e.path.equals(currentPath)) continue;
+                    items.add(new FileItem(e.name, e.path, e.isDir, e.size));
                 }
                 // Sort: directories first, then files
                 Collections.sort(items, new Comparator<FileItem>() {
@@ -180,13 +177,7 @@ public class MainActivity extends ListActivity {
             emptyView.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
         }
 
-        private String nameFromPath(String fullPath) {
-            if (fullPath == null) return null;
-            // Remove trailing slash
-            String p = fullPath.endsWith("/") ? fullPath.substring(0, fullPath.length() - 1) : fullPath;
-            int slash = p.lastIndexOf('/');
-            return slash >= 0 ? p.substring(slash + 1) : p;
-        }
+
     }
 
     // Data model

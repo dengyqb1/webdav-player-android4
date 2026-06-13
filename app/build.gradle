@@ -31,5 +31,5 @@ android {
 }
 
 dependencies {
-    implementation 'com.github.lookfirst:sardine:5.7'
+    // No external dependencies - uses Android built-in HttpURLConnection
 }
