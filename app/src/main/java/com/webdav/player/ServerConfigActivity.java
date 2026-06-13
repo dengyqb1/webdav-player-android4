@@ -55,13 +55,25 @@ public class ServerConfigActivity extends Activity {
     }
 
     private void saveAndConnect() {
-        String url = urlInput.getText().toString().trim();
+        String rawUrl = urlInput.getText().toString().trim();
         String portStr = portInput.getText().toString().trim();
         String user = usernameInput.getText().toString().trim();
         String pass = passwordInput.getText().toString();
 
-        if (url.isEmpty()) {
+        if (rawUrl.isEmpty()) {
             Toast.makeText(this, "请输入服务器地址", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Validate and normalize URL
+        if (!rawUrl.startsWith("http://") && !rawUrl.startsWith("https://")) {
+            rawUrl = "https://" + rawUrl;
+        }
+
+        // Basic URL validation
+        int protoEnd = rawUrl.indexOf("://");
+        if (protoEnd < 0 || rawUrl.indexOf("://") + 3 >= rawUrl.length()) {
+            Toast.makeText(this, "服务器地址格式错误，请输入完整的URL", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -69,13 +81,17 @@ public class ServerConfigActivity extends Activity {
         if (!portStr.isEmpty()) {
             try {
                 port = Integer.parseInt(portStr);
+                if (port <= 0 || port > 65535) {
+                    Toast.makeText(this, "端口必须在 1-65535 之间", Toast.LENGTH_SHORT).show();
+                    return;
+                }
             } catch (NumberFormatException e) {
                 Toast.makeText(this, "端口格式错误", Toast.LENGTH_SHORT).show();
                 return;
             }
         }
 
-        config.setServerUrl(url);
+        config.setServerUrl(rawUrl);
         config.setPort(port);
         config.setUsername(user);
         config.setPassword(pass);
@@ -89,8 +105,14 @@ public class ServerConfigActivity extends Activity {
         @Override
         protected Boolean doInBackground(Void... params) {
             try {
+                String fullUrl = config.getFullUrl();
+                if (fullUrl == null || fullUrl.isEmpty()) {
+                    error = new Exception("服务器地址未设置");
+                    return false;
+                }
+
                 DavClient client = new DavClient(
-                        config.getFullUrl(),
+                        fullUrl,
                         config.getUsername(),
                         config.getPassword());
                 client.list("/");
@@ -107,8 +129,19 @@ public class ServerConfigActivity extends Activity {
                 setResult(RESULT_OK);
                 finish();
             } else {
+                String msg = error != null ? error.getMessage() : "未知错误";
+                // Make error messages more user-friendly
+                if (msg.contains("No address associated")) {
+                    msg = "无法连接服务器，请检查地址是否正确";
+                } else if (msg.contains("Connection refused")) {
+                    msg = "连接被拒绝，请检查端口是否正确";
+                } else if (msg.contains("connect timed out")) {
+                    msg = "连接超时，请检查网络或服务器地址";
+                } else if (msg.contains("protocol not found")) {
+                    msg = "地址格式错误，请确保以 http:// 或 https:// 开头";
+                }
                 Toast.makeText(ServerConfigActivity.this,
-                        "连接失败: " + (error != null ? error.getMessage() : "未知错误"),
+                        "连接失败: " + msg,
                         Toast.LENGTH_LONG).show();
             }
         }
