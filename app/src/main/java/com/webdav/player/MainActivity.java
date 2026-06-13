@@ -149,7 +149,7 @@ public class MainActivity extends ListActivity {
         String url = config.getServerUrl();
         String user = config.getUsername();
         String pass = config.getPassword();
-        davClient = new DavClient(url, user, pass);
+        davClient = new DavClient(config.getFullUrl(), user, pass);
         new ListFilesTask().execute(currentPath);
     }
 

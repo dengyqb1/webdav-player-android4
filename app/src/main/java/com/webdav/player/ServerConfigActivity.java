@@ -11,6 +11,7 @@ import android.widget.Toast;
 public class ServerConfigActivity extends Activity {
 
     private EditText urlInput;
+    private EditText portInput;
     private EditText usernameInput;
     private EditText passwordInput;
 
@@ -24,11 +25,16 @@ public class ServerConfigActivity extends Activity {
         config = new Config(this);
 
         urlInput = (EditText) findViewById(R.id.serverUrlInput);
+        portInput = (EditText) findViewById(R.id.portInput);
         usernameInput = (EditText) findViewById(R.id.usernameInput);
         passwordInput = (EditText) findViewById(R.id.passwordInput);
 
         // Restore saved values
         urlInput.setText(config.getServerUrl());
+        int savedPort = config.getPort();
+        if (savedPort > 0) {
+            portInput.setText(String.valueOf(savedPort));
+        }
         usernameInput.setText(config.getUsername());
         passwordInput.setText(config.getPassword());
 
@@ -50,6 +56,7 @@ public class ServerConfigActivity extends Activity {
 
     private void saveAndConnect() {
         String url = urlInput.getText().toString().trim();
+        String portStr = portInput.getText().toString().trim();
         String user = usernameInput.getText().toString().trim();
         String pass = passwordInput.getText().toString();
 
@@ -58,12 +65,18 @@ public class ServerConfigActivity extends Activity {
             return;
         }
 
-        // Ensure URL ends with /
-        if (!url.endsWith("/")) {
-            url = url + "/";
+        int port = 0;
+        if (!portStr.isEmpty()) {
+            try {
+                port = Integer.parseInt(portStr);
+            } catch (NumberFormatException e) {
+                Toast.makeText(this, "端口格式错误", Toast.LENGTH_SHORT).show();
+                return;
+            }
         }
 
         config.setServerUrl(url);
+        config.setPort(port);
         config.setUsername(user);
         config.setPassword(pass);
 
@@ -77,7 +90,7 @@ public class ServerConfigActivity extends Activity {
         protected Boolean doInBackground(Void... params) {
             try {
                 DavClient client = new DavClient(
-                        config.getServerUrl(),
+                        config.getFullUrl(),
                         config.getUsername(),
                         config.getPassword());
                 client.list("/");
