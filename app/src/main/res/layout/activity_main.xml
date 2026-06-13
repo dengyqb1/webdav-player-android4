@@ -5,9 +5,10 @@
     android:orientation="vertical">
 
     <ListView
-        android:id="@+id/fileListView"
+        android:id="@android:id/list"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:choiceMode="none"
         android:divider="@android:drawable/divider_horizontal_bright"
         android:dividerHeight="1dp"
@@ -22,7 +23,7 @@
         android:visibility="gone" />
 
     <TextView
-        android:id="@+id/emptyView"
+        android:id="@android:id/empty"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"

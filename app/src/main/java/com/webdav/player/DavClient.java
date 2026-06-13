@@ -1,12 +1,12 @@
 package com.webdav.player;
 
+import android.util.Base64;
+
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Simple WebDAV client using only Android built-in HTTP APIs.
@@ -71,7 +71,7 @@ public class DavClient {
 
         if (username.length() > 0) {
             String cred = username + ":" + password;
-            String basicAuth = "Basic " + Base64.encode(cred.getBytes("UTF-8"));
+            String basicAuth = "Basic " + Base64.encodeToString(cred.getBytes("UTF-8"), Base64.NO_WRAP);
             conn.setRequestProperty("Authorization", basicAuth);
         }
         return conn;
@@ -177,25 +177,4 @@ public class DavClient {
         }
     }
 
-    /**
-     * Minimal Base64 for API 15 (android.util.Base64 is API 8+, but this avoids any confusion).
-     */
-    private static class Base64 {
-        private static final String CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-        static String encode(byte[] data) {
-            StringBuilder sb = new StringBuilder();
-            int i = 0;
-            while (i < data.length) {
-                int b0 = data[i++] & 0xff;
-                int b1 = (i < data.length) ? data[i++] & 0xff : 0;
-                int b2 = (i < data.length) ? data[i++] & 0xff : 0;
-                sb.append(CHARS.charAt(b0 >> 2));
-                sb.append(CHARS.charAt(((b0 & 3) << 4) | (b1 >> 4)));
-                sb.append(i > data.length + 1 ? '=' : CHARS.charAt(((b1 & 15) << 2) | (b2 >> 6)));
-                sb.append(i > data.length ? '=' : CHARS.charAt(b2 & 63));
-            }
-            return sb.toString();
-        }
-    }
 }

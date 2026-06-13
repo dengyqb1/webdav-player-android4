@@ -29,7 +29,6 @@ public class MainActivity extends ListActivity {
     private DavClient davClient;
     private FileAdapter adapter;
     private ProgressBar progressBar;
-    private View emptyView;
     private String currentPath = "/";
 
     @Override
@@ -39,7 +38,6 @@ public class MainActivity extends ListActivity {
 
         config = new Config(this);
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
-        emptyView = findViewById(R.id.emptyView);
 
         adapter = new FileAdapter(this);
         setListAdapter(adapter);
@@ -131,8 +129,6 @@ public class MainActivity extends ListActivity {
         @Override
         protected void onPreExecute() {
             progressBar.setVisibility(View.VISIBLE);
-            getListView().setVisibility(View.GONE);
-            emptyView.setVisibility(View.GONE);
         }
 
         @Override
@@ -143,11 +139,9 @@ public class MainActivity extends ListActivity {
                 List<FileItem> items = new ArrayList<FileItem>();
                 for (DavClient.DavEntry e : entries) {
                     if (e.name == null || e.name.isEmpty()) continue;
-                    // Skip the current directory itself
                     if (e.path.equals(path) || e.path.equals(currentPath)) continue;
                     items.add(new FileItem(e.name, e.path, e.isDir, e.size));
                 }
-                // Sort: directories first, then files
                 Collections.sort(items, new Comparator<FileItem>() {
                     @Override
                     public int compare(FileItem a, FileItem b) {
@@ -173,14 +167,9 @@ public class MainActivity extends ListActivity {
                 return;
             }
             adapter.setItems(items);
-            getListView().setVisibility(items.isEmpty() ? View.GONE : View.VISIBLE);
-            emptyView.setVisibility(items.isEmpty() ? View.VISIBLE : View.GONE);
         }
-
-
     }
 
-    // Data model
     static class FileItem {
         String name;
         String path;
@@ -195,7 +184,6 @@ public class MainActivity extends ListActivity {
         }
     }
 
-    // Adapter
     static class FileAdapter extends BaseAdapter {
 
         private final Context context;
@@ -243,16 +231,10 @@ public class MainActivity extends ListActivity {
                         android.R.drawable.ic_menu_view, 0, 0, 0);
             } else {
                 infoView.setText(MediaUtils.formatSize(item.size));
-                if (MediaUtils.isVideo(item.name)) {
-                    nameView.setCompoundDrawablesWithIntrinsicBounds(
-                            android.R.drawable.ic_media_play, 0, 0, 0);
-                } else if (MediaUtils.isAudio(item.name)) {
-                    nameView.setCompoundDrawablesWithIntrinsicBounds(
-                            android.R.drawable.ic_media_play, 0, 0, 0);
-                } else {
-                    nameView.setCompoundDrawablesWithIntrinsicBounds(
-                            android.R.drawable.ic_menu_info_details, 0, 0, 0);
-                }
+                int icon = MediaUtils.isVideo(item.name) || MediaUtils.isAudio(item.name)
+                        ? android.R.drawable.ic_media_play
+                        : android.R.drawable.ic_menu_info_details;
+                nameView.setCompoundDrawablesWithIntrinsicBounds(icon, 0, 0, 0);
             }
             return convertView;
         }
