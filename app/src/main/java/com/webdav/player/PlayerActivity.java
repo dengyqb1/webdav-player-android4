@@ -6,6 +6,7 @@ import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.view.KeyEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -68,14 +69,11 @@ public class PlayerActivity extends Activity implements
         videoSurface = (SurfaceView) findViewById(R.id.videoSurface);
         surfaceHolder = videoSurface.getHolder();
         surfaceHolder.addCallback(this);
-        surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
-        // Hide video surface if audio-only
         if (!isVideo) {
             videoSurface.setVisibility(View.GONE);
         }
 
-        // Play/Pause
         playPauseButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -83,33 +81,23 @@ public class PlayerActivity extends Activity implements
             }
         });
 
-        // Rewind 10s
         findViewById(R.id.rewindButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (isPrepared && mediaPlayer != null) {
-                    int pos = mediaPlayer.getCurrentPosition();
-                    mediaPlayer.seekTo(Math.max(0, pos - 10000));
-                }
+                seekRelative(-10000);
             }
         });
 
-        // Forward 10s
         findViewById(R.id.forwardButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (isPrepared && mediaPlayer != null) {
-                    int pos = mediaPlayer.getCurrentPosition();
-                    mediaPlayer.seekTo(Math.min(mediaPlayer.getDuration(), pos + 10000));
-                }
+                seekRelative(10000);
             }
         });
 
-        // SeekBar user seek
         seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                // Only update time display on user interaction to avoid jitter
             }
 
             @Override
@@ -125,6 +113,38 @@ public class PlayerActivity extends Activity implements
         });
 
         initPlayer();
+    }
+
+    // TV remote key handler
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER
+                || keyCode == KeyEvent.KEYCODE_DPAD_CENTER
+                || keyCode == KeyEvent.KEYCODE_ENTER) {
+            togglePlayPause();
+            return true;
+        } else if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) {
+            seekRelative(-10000);
+            return true;
+        } else if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) {
+            seekRelative(10000);
+            return true;
+        } else if (keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE) {
+            togglePlayPause();
+            return true;
+        } else if (keyCode == KeyEvent.KEYCODE_BACK) {
+            finish();
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
+    private void seekRelative(int ms) {
+        if (isPrepared && mediaPlayer != null) {
+            int pos = mediaPlayer.getCurrentPosition();
+            int target = Math.max(0, Math.min(mediaPlayer.getDuration(), pos + ms));
+            mediaPlayer.seekTo(target);
+        }
     }
 
     private void initPlayer() {
@@ -143,9 +163,9 @@ public class PlayerActivity extends Activity implements
             mediaPlayer.setOnErrorListener(this);
             mediaPlayer.prepareAsync();
 
-            playPauseButton.setText("⏸");
+            playPauseButton.setText("\u23F8");
         } catch (IOException e) {
-            Toast.makeText(this, "播放失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "\u64AD\u653E\u5931\u8D25: " + e.getMessage(), Toast.LENGTH_LONG).show();
             finish();
         }
     }
@@ -156,20 +176,22 @@ public class PlayerActivity extends Activity implements
         seekBar.setMax(mp.getDuration());
         handler.post(updateRunnable);
         mp.start();
-        playPauseButton.setText("⏸");
+        playPauseButton.setText("\u23F8");
     }
 
     @Override
     public void onCompletion(MediaPlayer mp) {
         handler.removeCallbacks(updateRunnable);
-        playPauseButton.setText("▶");
+        playPauseButton.setText("\u25B6");
         seekBar.setProgress(0);
-        timeDisplay.setText("00:00 / " + MediaUtils.formatTime(mp.getDuration()));
+        if (mp != null) {
+            timeDisplay.setText("00:00 / " + MediaUtils.formatTime(mp.getDuration()));
+        }
     }
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
-        Toast.makeText(this, "播放出错 (code: " + what + ")", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "\u64AD\u653E\u51FA\u9519 (code: " + what + ")", Toast.LENGTH_SHORT).show();
         handler.removeCallbacks(updateRunnable);
         finish();
         return true;
@@ -194,11 +216,11 @@ public class PlayerActivity extends Activity implements
         if (mediaPlayer == null || !isPrepared) return;
         if (mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
-            playPauseButton.setText("▶");
+            playPauseButton.setText("\u25B6");
             handler.removeCallbacks(updateRunnable);
         } else {
             mediaPlayer.start();
-            playPauseButton.setText("⏸");
+            playPauseButton.setText("\u23F8");
             handler.post(updateRunnable);
         }
     }
@@ -215,7 +237,7 @@ public class PlayerActivity extends Activity implements
     protected void onPause() {
         if (mediaPlayer != null && mediaPlayer.isPlaying()) {
             mediaPlayer.pause();
-            playPauseButton.setText("▶");
+            playPauseButton.setText("\u25B6");
         }
         super.onPause();
     }

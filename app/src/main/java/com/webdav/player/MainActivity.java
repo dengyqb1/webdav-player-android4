@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -29,6 +30,7 @@ public class MainActivity extends ListActivity {
     private DavClient davClient;
     private FileAdapter adapter;
     private ProgressBar progressBar;
+    private TextView pathTitle;
     private String currentPath = "/";
 
     @Override
@@ -38,9 +40,12 @@ public class MainActivity extends ListActivity {
 
         config = new Config(this);
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        pathTitle = (TextView) findViewById(R.id.pathTitle);
 
         adapter = new FileAdapter(this);
         setListAdapter(adapter);
+
+        updateTitle();
 
         if (!config.isConfigured()) {
             startActivityForResult(
@@ -78,11 +83,39 @@ public class MainActivity extends ListActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    // TV remote key handler
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_MENU) {
+            // Open settings
+            startActivityForResult(
+                    new Intent(this, ServerConfigActivity.class), REQUEST_CONFIG);
+            return true;
+        } else if (keyCode == KeyEvent.KEYCODE_BACK) {
+            if (!currentPath.equals("/")) {
+                navigateUp();
+                return true;
+            }
+        } else if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER
+                || keyCode == KeyEvent.KEYCODE_ENTER) {
+            // Enter selected item
+            int pos = getSelectedItemPosition();
+            if (pos >= 0) openItem(pos);
+            return true;
+        }
+        return super.onKeyDown(keyCode, event);
+    }
+
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
+        openItem(position);
+    }
+
+    private void openItem(int position) {
         FileItem item = adapter.getItem(position);
         if (item.isDir) {
             currentPath = item.path;
+            updateTitle();
             connectAndList();
         } else if (MediaUtils.isMedia(item.name)) {
             String url = davClient.getDownloadUrl(item.path);
@@ -94,13 +127,9 @@ public class MainActivity extends ListActivity {
         }
     }
 
-    @Override
-    public void onBackPressed() {
-        if (currentPath.equals("/")) {
-            super.onBackPressed();
-        } else {
-            navigateUp();
-        }
+    private void updateTitle() {
+        String display = currentPath.equals("/") ? "根目录" : currentPath;
+        pathTitle.setText("WebDAV ▸ " + display);
     }
 
     private void navigateUp() {
@@ -110,8 +139,9 @@ public class MainActivity extends ListActivity {
             currentPath = "/";
         } else {
             currentPath = currentPath.substring(0, last);
-            if (!currentPath.startsWith("/")) currentPath = "/" + currentPath;
+            if (currentPath.isEmpty()) currentPath = "/";
         }
+        updateTitle();
         connectAndList();
     }
 
@@ -162,7 +192,7 @@ public class MainActivity extends ListActivity {
             progressBar.setVisibility(View.GONE);
             if (items == null) {
                 Toast.makeText(MainActivity.this,
-                        getString(R.string.error_connect) + ": " + error.getMessage(),
+                        "连接失败: " + error.getMessage(),
                         Toast.LENGTH_LONG).show();
                 return;
             }
@@ -226,7 +256,7 @@ public class MainActivity extends ListActivity {
 
             nameView.setText(item.name);
             if (item.isDir) {
-                infoView.setText("📁 文件夹");
+                infoView.setText("文件夹 ▸");
                 nameView.setCompoundDrawablesWithIntrinsicBounds(
                         android.R.drawable.ic_menu_view, 0, 0, 0);
             } else {
