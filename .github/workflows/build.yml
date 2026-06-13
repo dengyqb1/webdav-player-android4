@@ -20,35 +20,30 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Check Android SDK
-      run: |
-        echo "ANDROID_HOME=$ANDROID_HOME"
-        ls -la "$ANDROID_HOME/platforms/" 2>/dev/null || echo "No platforms"
-        ls -la "$ANDROID_HOME/build-tools/" 2>/dev/null || echo "No build-tools"
+    - name: Set up Gradle
+      uses: gradle/actions/setup-gradle@v3
 
     - name: Install Android SDK 33
       run: |
-        if [ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]; then
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-33" "build-tools;33.0.0"
-        elif [ -d "$ANDROID_HOME/cmdline-tools/16.0/bin" ]; then
-          SKIP_JDK_VERSION_CHECK=1 yes | "$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager" --licenses || true
-          SKIP_JDK_VERSION_CHECK=1 "$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager" "platforms;android-33" "build-tools;33.0.0"
-        else
-          echo "No cmdline-tools found, downloading..."
-          mkdir -p "$ANDROID_HOME/cmdline-tools/"
-          curl -sL "https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip" -o /tmp/cmdline.zip
-          unzip -q /tmp/cmdline.zip -d "$ANDROID_HOME/cmdline-tools/"
-          mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-33" "build-tools;33.0.0"
+        ls "$ANDROID_HOME/platforms/" 2>/dev/null || echo "No platforms"
+        # Use sdkmanager to install required SDK
+        SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+        if [ ! -f "$SDKMANAGER" ]; then
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/16.0/bin/sdkmanager"
         fi
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+        if [ ! -f "$SDKMANAGER" ]; then
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/tools/bin/sdkmanager"
+        fi
+        echo "Using sdkmanager: $SDKMANAGER"
+        SKIP_JDK_VERSION_CHECK=1 yes | "$SDKMANAGER" --licenses || true
+        SKIP_JDK_VERSION_CHECK=1 "$SDKMANAGER" "platforms;android-33" "build-tools;33.0.0"
 
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tail -50
+      run: |
+        # Generate proper gradle wrapper
+        gradle wrapper --gradle-version 7.6.3
+        chmod +x gradlew
+        ./gradlew assembleDebug --no-daemon --stacktrace
 
     - name: Upload Debug APK
       if: success()
@@ -57,8 +52,9 @@ jobs:
         name: webdav-player-debug
         path: app/build/outputs/apk/debug/*.apk
 
-    - name: Show failure logs
+    - name: Show debug info
       if: failure()
       run: |
+        find app/build -name "*.apk" 2>/dev/null
         cat app/build/outputs/logs/manifest-merger-debug-report.txt 2>/dev/null || echo "No manifest report"
-        find app/build -name "*.log" 2>/dev/null | head -5 | while read f; do echo "=== $f ==="; tail -30 "$f"; done
+        find app/build -name "*.log" 2>/dev/null | head -5 | while read f; do echo "=== $f ==="; tail -50 "$f"; done
