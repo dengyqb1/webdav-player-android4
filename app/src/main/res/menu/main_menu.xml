@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_parent"
+        android:title="返回上级"
+        android:showAsAction="always"
+        android:icon="@android:drawable/ic_menu_revert" />
+    <item
+        android:id="@+id/menu_settings"
+        android:title="@string/settings"
+        android:showAsAction="ifRoom"
+        android:icon="@android:drawable/ic_menu_preferences" />
+</menu>

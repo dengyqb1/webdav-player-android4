@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WebDAV 播放器</string>
+    <string name="config_title">服务器设置</string>
+    <string name="server_url">服务器地址</string>
+    <string name="server_url_hint">https://your-server.com/dav/</string>
+    <string name="username">用户名</string>
+    <string name="password">密码</string>
+    <string name="connect">连接</string>
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
+    <string name="no_server">请先配置服务器</string>
+    <string name="connecting">正在连接…</string>
+    <string name="error_connect">连接失败</string>
+    <string name="empty_folder">空文件夹</string>
+    <string name="loading">加载中…</string>
+    <string name="media_types">音频/视频文件</string>
+    <string name="settings">设置</string>
+    <string name="now_playing">正在播放</string>
+</resources>
